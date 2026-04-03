@@ -125,6 +125,7 @@ npx tsx examples/01-single-agent.ts
 | [05 — Copilot](examples/05-copilot-test.ts) | GitHub Copilot 作为 LLM 提供者 |
 | [06 — 本地模型](examples/06-local-model.ts) | Ollama + Claude 混合流水线，通过 `baseURL` 接入（兼容 vLLM、LM Studio 等） |
 | [07 — 扇出聚合](examples/07-fan-out-aggregate.ts) | `runParallel()` MapReduce — 3 个分析师并行，然后综合 |
+| [08 — Gemma 4 本地](examples/08-gemma4-local.ts) | 纯本地 Gemma 4 智能体团队 + tool-calling — 零 API 费用 |
 
 ## 架构
 
@@ -185,6 +186,8 @@ npx tsx examples/01-single-agent.ts
 | OpenAI (GPT) | `provider: 'openai'` | `OPENAI_API_KEY` | 已验证 |
 | GitHub Copilot | `provider: 'copilot'` | `GITHUB_TOKEN` | 已验证 |
 | Ollama / vLLM / LM Studio | `provider: 'openai'` + `baseURL` | — | 已验证 |
+
+已验证支持 tool-calling 的本地模型：**Gemma 4**（见[示例 08](examples/08-gemma4-local.ts)）。
 
 任何 OpenAI 兼容 API 均可通过 `provider: 'openai'` + `baseURL` 接入（DeepSeek、Groq、Mistral、Qwen、MiniMax 等）。这些 Provider 尚未完整验证——欢迎通过 [#25](https://github.com/JackChen-me/open-multi-agent/issues/25) 贡献验证。
 

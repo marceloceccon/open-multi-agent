@@ -121,6 +121,7 @@ npx tsx examples/01-single-agent.ts
 | [05 — Copilot](examples/05-copilot-test.ts) | GitHub Copilot as an LLM provider |
 | [06 — Local Model](examples/06-local-model.ts) | Ollama + Claude in one pipeline via `baseURL` (works with vLLM, LM Studio, etc.) |
 | [07 — Fan-Out / Aggregate](examples/07-fan-out-aggregate.ts) | `runParallel()` MapReduce — 3 analysts in parallel, then synthesize |
+| [08 — Gemma 4 Local](examples/08-gemma4-local.ts) | Pure-local Gemma 4 agent team with tool-calling — zero API cost |
 
 ## Architecture
 
@@ -181,6 +182,8 @@ npx tsx examples/01-single-agent.ts
 | OpenAI (GPT) | `provider: 'openai'` | `OPENAI_API_KEY` | Verified |
 | GitHub Copilot | `provider: 'copilot'` | `GITHUB_TOKEN` | Verified |
 | Ollama / vLLM / LM Studio | `provider: 'openai'` + `baseURL` | — | Verified |
+
+Verified local models with tool-calling: **Gemma 4** (see [example 08](examples/08-gemma4-local.ts)).
 
 Any OpenAI-compatible API should work via `provider: 'openai'` + `baseURL` (DeepSeek, Groq, Mistral, Qwen, MiniMax, etc.). These providers have not been fully verified yet — contributions welcome via [#25](https://github.com/JackChen-me/open-multi-agent/issues/25).
 
