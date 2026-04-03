@@ -65,7 +65,7 @@ import {
  * Thread-safe — a single instance may be shared across concurrent agent runs.
  */
 export class OpenAIAdapter implements LLMAdapter {
-  readonly name = 'openai'
+  readonly name: string = 'openai'
 
   readonly #client: OpenAI
 

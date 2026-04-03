@@ -186,7 +186,7 @@ export interface ToolDefinition<TInput = Record<string, unknown>> {
 export interface AgentConfig {
   readonly name: string
   readonly model: string
-  readonly provider?: 'anthropic' | 'copilot' | 'openai'
+  readonly provider?: 'anthropic' | 'copilot' | 'grok' | 'openai'
   /**
    * Custom base URL for OpenAI-compatible APIs (Ollama, vLLM, LM Studio, etc.).
    * Note: local servers that don't require auth still need `apiKey` set to a
@@ -312,7 +312,7 @@ export interface OrchestratorEvent {
 export interface OrchestratorConfig {
   readonly maxConcurrency?: number
   readonly defaultModel?: string
-  readonly defaultProvider?: 'anthropic' | 'copilot' | 'openai'
+  readonly defaultProvider?: 'anthropic' | 'copilot' | 'grok' | 'openai'
   readonly defaultBaseURL?: string
   readonly defaultApiKey?: string
   readonly onProgress?: (event: OrchestratorEvent) => void

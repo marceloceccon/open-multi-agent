@@ -122,6 +122,7 @@ npx tsx examples/01-single-agent.ts
 | [09 — Structured Output](examples/09-structured-output.ts) | `outputSchema` (Zod) on AgentConfig — validated JSON via `result.structured` |
 | [10 — Task Retry](examples/10-task-retry.ts) | `maxRetries` / `retryDelayMs` / `retryBackoff` with `task_retry` progress events |
 | [11 — Trace Observability](examples/11-trace-observability.ts) | `onTrace` callback — structured spans for LLM calls, tools, tasks, and agents |
+| [12 — Grok](examples/12-grok.ts) | Same as example 02 (`runTeam()` collaboration) with Grok (`XAI_API_KEY`) |
 
 ## Architecture
 
@@ -180,12 +181,26 @@ npx tsx examples/01-single-agent.ts
 |----------|--------|---------|--------|
 | Anthropic (Claude) | `provider: 'anthropic'` | `ANTHROPIC_API_KEY` | Verified |
 | OpenAI (GPT) | `provider: 'openai'` | `OPENAI_API_KEY` | Verified |
+| Grok (xAI)   | `provider: 'grok'` | `XAI_API_KEY` | Verified |
 | GitHub Copilot | `provider: 'copilot'` | `GITHUB_TOKEN` | Verified |
 | Ollama / vLLM / LM Studio | `provider: 'openai'` + `baseURL` | — | Verified |
 
 Verified local models with tool-calling: **Gemma 4** (see [example 08](examples/08-gemma4-local.ts)).
 
-Any OpenAI-compatible API should work via `provider: 'openai'` + `baseURL` (DeepSeek, Groq, Mistral, Qwen, MiniMax, etc.). These providers have not been fully verified yet — contributions welcome via [#25](https://github.com/JackChen-me/open-multi-agent/issues/25).
+Any OpenAI-compatible API should work via `provider: 'openai'` + `baseURL` (DeepSeek, Groq, Mistral, Qwen, MiniMax, etc.). **Grok now has first-class support** via `provider: 'grok'`.
+
+### LLM Configuration Examples
+
+```typescript
+const grokAgent: AgentConfig = {
+  name: 'grok-agent',
+  provider: 'grok',
+  model: 'grok-4',
+  systemPrompt: 'You are a helpful assistant.',
+}
+```
+
+(Set your `XAI_API_KEY` environment variable — no `baseURL` needed anymore.)
 
 ## Contributing
 
