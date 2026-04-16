@@ -50,6 +50,7 @@ const PROVIDER_REFERENCE: ReadonlyArray<{
   { id: 'openai', apiKeyEnv: ['OPENAI_API_KEY'], baseUrlSupported: true, notes: 'Set baseURL for Ollama / vLLM / LM Studio; apiKey may be a placeholder.' },
   { id: 'gemini', apiKeyEnv: ['GEMINI_API_KEY', 'GOOGLE_API_KEY'], baseUrlSupported: false },
   { id: 'grok', apiKeyEnv: ['XAI_API_KEY'], baseUrlSupported: true },
+  { id: 'minimax', apiKeyEnv: ['MINIMAX_API_KEY'], baseUrlSupported: true, notes: 'Global endpoint: https://api.minimax.io/v1 (default). China endpoint: https://api.minimaxi.com/v1. Set MINIMAX_BASE_URL to choose, or pass baseURL in agent config.' },
   {
     id: 'copilot',
     apiKeyEnv: ['GITHUB_COPILOT_TOKEN', 'GITHUB_TOKEN'],
@@ -259,6 +260,7 @@ const DEFAULT_MODEL_HINT: Record<SupportedProvider, string> = {
   gemini: 'gemini-2.0-flash',
   grok: 'grok-2-latest',
   copilot: 'gpt-4o',
+  minimax: 'MiniMax-M2.7',
 }
 
 async function cmdProvider(sub: string | undefined, arg: string | undefined, pretty: boolean): Promise<number> {
