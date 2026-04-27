@@ -9,6 +9,7 @@ import type {
   LLMResponse,
   OrchestratorEvent,
   TeamConfig,
+  TraceEvent,
 } from '../src/types.js'
 
 // ---------------------------------------------------------------------------
@@ -634,6 +635,68 @@ describe('OpenMultiAgent', () => {
       expect(Array.isArray(tasksArg)).toBe(true)
       expect(tasksArg).toHaveLength(1)
       expect(tasksArg?.[0]?.title).toBe('Research')
+    })
+
+    it('emits plan_ready trace with approval decision', async () => {
+      mockAdapterResponses = [
+        '```json\n[{"title": "Research", "description": "Research", "assignee": "worker"}]\n```',
+      ]
+      const traces: TraceEvent[] = []
+      const oma = new OpenMultiAgent({
+        defaultModel: 'mock-model',
+        onTrace: (event) => { traces.push(event) },
+        onPlanReady: async () => false,
+      })
+      const team = oma.createTeam('t', teamCfg([agentConfig('worker')]))
+
+      const result = await oma.runTeam(team, complexGoal)
+
+      expect(result.success).toBe(false)
+      const planReadyTraces = traces.filter((t) => t.type === 'plan_ready')
+      expect(planReadyTraces).toHaveLength(1)
+      const planReady = planReadyTraces[0]!
+      expect(planReady.type).toBe('plan_ready')
+      expect(planReady.agent).toBe('coordinator')
+      expect(planReady.taskCount).toBe(1)
+      expect(planReady.approved).toBe(false)
+      expect(planReady.runId).toMatch(/.+/)
+      expect(planReady.durationMs).toBeGreaterThanOrEqual(0)
+      expect(planReady.startMs).toBeLessThanOrEqual(planReady.endMs)
+    })
+  })
+
+  describe('stream trace events', () => {
+    it('emits agent_stream trace events when onAgentStream is configured', async () => {
+      const complexGoal = 'First research the topic, then write a comprehensive guide based on the findings'
+      mockAdapterResponses = [
+        '```json\n[{"title": "Research", "description": "Research", "assignee": "worker"}]\n```',
+        'worker output',
+        'final synthesis',
+      ]
+      const traces: TraceEvent[] = []
+      const streamedTypes: string[] = []
+      const oma = new OpenMultiAgent({
+        defaultModel: 'mock-model',
+        onTrace: (event) => { traces.push(event) },
+        onAgentStream: (_agentName, event) => { streamedTypes.push(event.type) },
+      })
+      const team = oma.createTeam('t', teamCfg([agentConfig('worker')]))
+
+      const result = await oma.runTeam(team, complexGoal)
+
+      expect(result.success).toBe(true)
+      expect(streamedTypes.length).toBeGreaterThan(0)
+
+      const streamTraces = traces.filter((t) => t.type === 'agent_stream')
+      expect(streamTraces.length).toBeGreaterThan(0)
+      expect(streamTraces.some((t) => t.streamType === 'text')).toBe(true)
+      expect(streamTraces.some((t) => t.streamType === 'done')).toBe(true)
+      for (const trace of streamTraces) {
+        expect(trace.agent).toBe('worker')
+        expect(trace.taskId).toMatch(/.+/)
+        expect(trace.runId).toMatch(/.+/)
+        expect(trace.durationMs).toBe(0)
+      }
     })
   })
 })

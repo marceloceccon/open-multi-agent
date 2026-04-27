@@ -187,6 +187,8 @@ export type {
   ToolCallTrace,
   TaskTrace,
   AgentTrace,
+  PlanReadyTrace,
+  AgentStreamTrace,
 
   // Memory
   MemoryEntry,

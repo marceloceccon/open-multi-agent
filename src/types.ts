@@ -732,7 +732,13 @@ export interface CoordinatorConfig {
 // ---------------------------------------------------------------------------
 
 /** Trace event type discriminants. */
-export type TraceEventType = 'llm_call' | 'tool_call' | 'task' | 'agent'
+export type TraceEventType =
+  | 'llm_call'
+  | 'tool_call'
+  | 'task'
+  | 'agent'
+  | 'plan_ready'
+  | 'agent_stream'
 
 /** Shared fields present on every trace event. */
 export interface TraceEventBase {
@@ -785,8 +791,30 @@ export interface AgentTrace extends TraceEventBase {
   readonly toolCalls: number
 }
 
+/** Emitted when runTeam reaches the plan approval boundary. */
+export interface PlanReadyTrace extends TraceEventBase {
+  readonly type: 'plan_ready'
+  /** Number of tasks produced by coordinator decomposition. */
+  readonly taskCount: number
+  /** Approval decision returned by onPlanReady callback. */
+  readonly approved: boolean
+}
+
+/** Emitted for each streaming event forwarded through onAgentStream in runTeam. */
+export interface AgentStreamTrace extends TraceEventBase {
+  readonly type: 'agent_stream'
+  /** Underlying stream event type (`text`, `tool_use`, `done`, etc.). */
+  readonly streamType: StreamEvent['type']
+}
+
 /** Discriminated union of all trace event types. */
-export type TraceEvent = LLMCallTrace | ToolCallTrace | TaskTrace | AgentTrace
+export type TraceEvent =
+  | LLMCallTrace
+  | ToolCallTrace
+  | TaskTrace
+  | AgentTrace
+  | PlanReadyTrace
+  | AgentStreamTrace
 
 // ---------------------------------------------------------------------------
 // Memory
