@@ -1,39 +1,43 @@
 /**
- * Multi-Agent Team Collaboration with Groq
+ * Multi-Agent Team Collaboration with Mistral
  *
  * Three specialized agents (architect, developer, reviewer) collaborate via `runTeam()`
- * to build a minimal Express.js REST API. Every agent uses Groq via the OpenAI-compatible adapter.
+ * to build a minimal Express.js REST API. Every agent uses Mistral via the OpenAI-compatible adapter.
  *
  * Run:
- *   npx tsx examples/providers/groq.ts
+ *   npx tsx examples/providers/mistral.ts
  *
  * Prerequisites:
- *   GROQ_API_KEY environment variable must be set.
+ *   MISTRAL_API_KEY environment variable must be set.
  *
  * Available models:
- *   llama-3.3-70b-versatile       — Groq production model (recommended for coding tasks)
- *   deepseek-r1-distill-llama-70b — Groq reasoning model
+ *   mistral-large-latest    — Mistral flagship general-purpose model (default)
+ *   mistral-medium-latest   — Balanced frontier model for general tasks
+ *   mistral-small-latest    — Fast, efficient general-purpose model
+ *   codestral-latest        — Code-focused model
+ *   devstral-small-latest   — Agentic software engineering model
+ *   magistral-medium-latest — Reasoning model for complex tasks
  */
 
 import { OpenMultiAgent } from '../../src/index.js'
 import type { AgentConfig, OrchestratorEvent } from '../../src/types.js'
 
-const GROQ_BASE_URL = 'https://api.groq.com/openai/v1'
-const GROQ_API_KEY = process.env.GROQ_API_KEY
+const MISTRAL_BASE_URL = 'https://api.mistral.ai/v1'
+const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY
 
-if (!GROQ_API_KEY) {
-  throw new Error('GROQ_API_KEY environment variable must be set.')
+if (!MISTRAL_API_KEY) {
+  throw new Error('MISTRAL_API_KEY environment variable must be set.')
 }
 
 // ---------------------------------------------------------------------------
-// Agent definitions (all using Groq via the OpenAI-compatible adapter)
+// Agent definitions (all using Mistral via the OpenAI-compatible adapter)
 // ---------------------------------------------------------------------------
 const architect: AgentConfig = {
   name: 'architect',
-  model: 'deepseek-r1-distill-llama-70b',
+  model: 'mistral-large-latest',
   provider: 'openai',
-  baseURL: GROQ_BASE_URL,
-  apiKey: GROQ_API_KEY,
+  baseURL: MISTRAL_BASE_URL,
+  apiKey: MISTRAL_API_KEY,
   systemPrompt: `You are a software architect with deep experience in Node.js and REST API design.
 Your job is to design clear, production-quality API contracts and file/directory structures.
 Output concise plans in markdown — no unnecessary prose.`,
@@ -44,10 +48,10 @@ Output concise plans in markdown — no unnecessary prose.`,
 
 const developer: AgentConfig = {
   name: 'developer',
-  model: 'llama-3.3-70b-versatile',
+  model: 'mistral-large-latest',
   provider: 'openai',
-  baseURL: GROQ_BASE_URL,
-  apiKey: GROQ_API_KEY,
+  baseURL: MISTRAL_BASE_URL,
+  apiKey: MISTRAL_API_KEY,
   systemPrompt: `You are a TypeScript/Node.js developer. You implement what the architect specifies.
 Write clean, runnable code with proper error handling. Use the tools to write files and run tests.`,
   tools: ['bash', 'file_read', 'file_write', 'file_edit'],
@@ -57,10 +61,10 @@ Write clean, runnable code with proper error handling. Use the tools to write fi
 
 const reviewer: AgentConfig = {
   name: 'reviewer',
-  model: 'llama-3.3-70b-versatile',
+  model: 'mistral-large-latest',
   provider: 'openai',
-  baseURL: GROQ_BASE_URL,
-  apiKey: GROQ_API_KEY,
+  baseURL: MISTRAL_BASE_URL,
+  apiKey: MISTRAL_API_KEY,
   systemPrompt: `You are a senior code reviewer. Review code for correctness, security, and clarity.
 Provide a structured review with: LGTM items, suggestions, and any blocking issues.
 Read files using the tools before reviewing.`,
@@ -106,10 +110,10 @@ function handleProgress(event: OrchestratorEvent): void {
 // Orchestrate
 // ---------------------------------------------------------------------------
 const orchestrator = new OpenMultiAgent({
-  defaultModel: 'llama-3.3-70b-versatile',
+  defaultModel: 'mistral-large-latest',
   defaultProvider: 'openai',
-  defaultBaseURL: GROQ_BASE_URL,
-  defaultApiKey: GROQ_API_KEY,
+  defaultBaseURL: MISTRAL_BASE_URL,
+  defaultApiKey: MISTRAL_API_KEY,
   maxConcurrency: 1, // sequential for readable output
   onProgress: handleProgress,
 })
@@ -125,7 +129,7 @@ console.log(`Team "${team.name}" created with agents: ${team.getAgents().map(a =
 console.log('\nStarting team run...\n')
 console.log('='.repeat(60))
 
-const goal = `Create a minimal Express.js REST API in /tmp/express-api/ with:
+const goal = `Create a minimal Express.js REST API in /tmp/mistral-express-api/ with:
 - GET /health → { status: "ok" }
 - GET /users → returns a hardcoded array of 2 user objects
 - POST /users → accepts { name, email } body, logs it, returns 201
