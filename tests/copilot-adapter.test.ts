@@ -420,6 +420,112 @@ describe('CopilotAdapter', () => {
   })
 
   // =========================================================================
+  // reasoning_effort forwarding (RFC #200 follow-up)
+  // =========================================================================
+
+  describe('reasoning_effort forwarding', () => {
+    let adapter: CopilotAdapter
+
+    beforeEach(() => {
+      globalThis.fetch = mockFetchForToken()
+      adapter = new CopilotAdapter('gh_token')
+    })
+
+    it('forwards thinking.effort as reasoning_effort on chat()', async () => {
+      mockCreate.mockResolvedValue(makeCompletion())
+
+      await adapter.chat(
+        [textMsg('user', 'Hi')],
+        chatOpts({ thinking: { enabled: true, effort: 'low' } }),
+      )
+
+      expect(mockCreate.mock.calls[0][0].reasoning_effort).toBe('low')
+    })
+
+    it('forwards thinking.effort as reasoning_effort on stream()', async () => {
+      mockCreate.mockResolvedValue(makeChunks([
+        { id: 'c', model: 'm', choices: [{ index: 0, delta: { content: 'ok' }, finish_reason: 'stop' }], usage: { prompt_tokens: 1, completion_tokens: 1 } },
+      ]))
+
+      await collectEvents(
+        adapter.stream(
+          [textMsg('user', 'Hi')],
+          chatOpts({ thinking: { enabled: true, effort: 'high' } }),
+        ),
+      )
+
+      expect(mockCreate.mock.calls[0][0].reasoning_effort).toBe('high')
+    })
+
+    it('omits reasoning_effort when thinking is absent or effort is unset', async () => {
+      mockCreate.mockResolvedValue(makeCompletion())
+      await adapter.chat([textMsg('user', 'Hi')], chatOpts())
+      expect(mockCreate.mock.calls[0][0].reasoning_effort).toBeUndefined()
+
+      mockCreate.mockResolvedValue(makeCompletion())
+      await adapter.chat(
+        [textMsg('user', 'Hi')],
+        chatOpts({ thinking: { enabled: true, budgetTokens: 2048 } }),
+      )
+      expect(mockCreate.mock.calls[1][0].reasoning_effort).toBeUndefined()
+    })
+  })
+
+  // =========================================================================
+  // Conservative param surface (intentional non-forwarding)
+  // =========================================================================
+
+  describe('conservative param surface', () => {
+    let adapter: CopilotAdapter
+
+    beforeEach(() => {
+      globalThis.fetch = mockFetchForToken()
+      adapter = new CopilotAdapter('gh_token')
+    })
+
+    it('does NOT forward sampling params or extraBody that lack public Copilot spec coverage', async () => {
+      mockCreate.mockResolvedValue(makeCompletion())
+
+      await adapter.chat(
+        [textMsg('user', 'Hi')],
+        chatOpts({
+          frequencyPenalty: 0.5,
+          presencePenalty: 0.4,
+          topP: 0.9,
+          topK: 40,
+          minP: 0.05,
+          parallelToolCalls: false,
+          extraBody: { logit_bias: { '50256': -100 } },
+        }),
+      )
+
+      const sent = mockCreate.mock.calls[0][0]
+      expect(sent.frequency_penalty).toBeUndefined()
+      expect(sent.presence_penalty).toBeUndefined()
+      expect(sent.top_p).toBeUndefined()
+      expect(sent.top_k).toBeUndefined()
+      expect(sent.min_p).toBeUndefined()
+      expect(sent.parallel_tool_calls).toBeUndefined()
+      expect(sent.logit_bias).toBeUndefined()
+    })
+
+    it('still forwards the documented param subset (temperature, max_tokens, tools)', async () => {
+      mockCreate.mockResolvedValue(makeCompletion())
+      const tool = toolDef('search')
+
+      await adapter.chat(
+        [textMsg('user', 'Hi')],
+        chatOpts({ tools: [tool], temperature: 0.5, maxTokens: 2000 }),
+      )
+
+      const sent = mockCreate.mock.calls[0][0]
+      expect(sent.temperature).toBe(0.5)
+      expect(sent.max_tokens).toBe(2000)
+      expect(sent.tools[0].function.name).toBe('search')
+    })
+  })
+
+  // =========================================================================
   // getCopilotMultiplier()
   // =========================================================================
 

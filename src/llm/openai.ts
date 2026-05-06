@@ -107,14 +107,15 @@ export class OpenAIAdapter implements LLMAdapter {
         top_k: options.topK,
         min_p: options.minP,
         parallel_tool_calls: options.parallelToolCalls,
+        reasoning_effort: options.thinking?.effort,
         ...options.extraBody,
         model: options.model,
         messages: openAIMessages,
         tools: options.tools ? options.tools.map(toOpenAITool) : undefined,
         stream: false,
-        // Cast covers `top_k` / `min_p` and arbitrary `extraBody` keys, which
-        // local OpenAI-compatible servers (vLLM, llama-server) accept but the
-        // upstream SDK type does not declare.
+        // Cast covers `top_k` / `min_p` and arbitrary `extraBody` keys,
+        // which local OpenAI-compatible servers (vLLM, llama-server) accept
+        // but the upstream SDK type does not declare.
       } as ChatCompletionCreateParamsNonStreaming,
       {
         signal: options.abortSignal,
@@ -157,6 +158,7 @@ export class OpenAIAdapter implements LLMAdapter {
         top_k: options.topK,
         min_p: options.minP,
         parallel_tool_calls: options.parallelToolCalls,
+        reasoning_effort: options.thinking?.effort,
         ...options.extraBody,
         model: options.model,
         messages: openAIMessages,

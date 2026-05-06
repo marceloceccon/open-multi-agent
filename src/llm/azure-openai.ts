@@ -123,10 +123,21 @@ export class AzureOpenAIAdapter implements LLMAdapter {
 
     const completion = await this.#client.chat.completions.create(
       {
-        model: deploymentName,
-        messages: openAIMessages,
+        // Sampling params first so extraBody can override them. Structural
+        // fields (model/messages/tools/stream) come after extraBody so users
+        // cannot accidentally clobber them via extraBody.
+        // `top_k` / `min_p` deliberately omitted — vLLM-only, not accepted
+        // by Azure OpenAI's hosted endpoint.
         max_tokens: options.maxTokens,
         temperature: options.temperature,
+        frequency_penalty: options.frequencyPenalty,
+        presence_penalty: options.presencePenalty,
+        top_p: options.topP,
+        parallel_tool_calls: options.parallelToolCalls,
+        reasoning_effort: options.thinking?.effort,
+        ...options.extraBody,
+        model: deploymentName,
+        messages: openAIMessages,
         tools: options.tools ? options.tools.map(toOpenAITool) : undefined,
         stream: false,
       },
@@ -162,10 +173,18 @@ export class AzureOpenAIAdapter implements LLMAdapter {
     // We request usage in the final chunk so we can include it in the `done` event.
     const streamResponse = await this.#client.chat.completions.create(
       {
-        model: deploymentName,
-        messages: openAIMessages,
+        // See chat() above for the field-ordering rationale and the
+        // `top_k` / `min_p` exclusion.
         max_tokens: options.maxTokens,
         temperature: options.temperature,
+        frequency_penalty: options.frequencyPenalty,
+        presence_penalty: options.presencePenalty,
+        top_p: options.topP,
+        parallel_tool_calls: options.parallelToolCalls,
+        reasoning_effort: options.thinking?.effort,
+        ...options.extraBody,
+        model: deploymentName,
+        messages: openAIMessages,
         tools: options.tools ? options.tools.map(toOpenAITool) : undefined,
         stream: true,
         stream_options: { include_usage: true },

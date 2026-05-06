@@ -324,12 +324,19 @@ export interface ToolDefinition<TInput = Record<string, unknown>> {
  *   an explicit value rather than derived from `budgetTokens` so the call
  *   site stays unambiguous across providers.
  *
+ * The `effort` union is intentionally narrowed to the values declared by
+ * the pinned `openai` SDK (`'low' | 'medium' | 'high'`). Newer values
+ * shipped by the API but not yet in the SDK type union (e.g. gpt-5's
+ * `'minimal'`, GPT-5.5's `'none'`) should be passed via `extraBody:
+ * { reasoning_effort: '<value>' }`, matching how `top_k` / `min_p` are
+ * handled for vLLM.
+ *
  * Adapters that don't recognise a given field ignore it.
  */
 export interface ThinkingConfig {
   readonly enabled: boolean
   readonly budgetTokens?: number
-  readonly effort?: 'minimal' | 'low' | 'medium' | 'high'
+  readonly effort?: 'low' | 'medium' | 'high'
 }
 
 /** Context passed to the {@link AgentConfig.beforeRun} hook. */
@@ -431,10 +438,16 @@ export interface AgentConfig {
    */
   readonly extraBody?: Record<string, unknown>
   /**
-   * Extended thinking / reasoning configuration. Forwarded to providers that
-   * accept a typed thinking parameter (Anthropic, Gemini). Providers that
-   * don't (OpenAI Chat Completions, local servers) ignore this field; use
-   * {@link extraBody} for provider-specific reasoning controls instead.
+   * Extended thinking / reasoning configuration. Provider mapping:
+   * - Anthropic: forwards `enabled` + `budgetTokens` as the `thinking` request
+   *   param (see `toAnthropicThinkingParam`).
+   * - Gemini: forwards `enabled` + `budgetTokens` as `thinkingConfig`
+   *   (`includeThoughts` defaults on when enabled).
+   * - OpenAI: forwards `effort` as `reasoning_effort` (o-series, gpt-5).
+   *   The `enabled`/`budgetTokens` fields are ignored — OpenAI's reasoning
+   *   surface is qualitative (`effort`), not quantitative.
+   * - All other providers (Bedrock, local servers, etc.): ignored. Use
+   *   {@link extraBody} for provider-specific reasoning controls instead.
    */
   readonly thinking?: ThinkingConfig
   /**

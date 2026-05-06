@@ -301,10 +301,14 @@ export class CopilotAdapter implements LLMAdapter {
 
     const completion = await client.chat.completions.create(
       {
+        // Narrow surface: Copilot's chat/completions API isn't publicly
+        // documented, so forward only fields seen in reverse-engineered
+        // request examples plus the SDK-typed `reasoning_effort`.
         model: options.model,
         messages: openAIMessages,
         max_tokens: options.maxTokens,
         temperature: options.temperature,
+        reasoning_effort: options.thinking?.effort,
         tools: options.tools ? options.tools.map(toOpenAITool) : undefined,
         stream: false,
       },
@@ -330,10 +334,12 @@ export class CopilotAdapter implements LLMAdapter {
 
     const streamResponse = await client.chat.completions.create(
       {
+        // See chat() above for the rationale behind the narrow field set.
         model: options.model,
         messages: openAIMessages,
         max_tokens: options.maxTokens,
         temperature: options.temperature,
+        reasoning_effort: options.thinking?.effort,
         tools: options.tools ? options.tools.map(toOpenAITool) : undefined,
         stream: true,
         stream_options: { include_usage: true },

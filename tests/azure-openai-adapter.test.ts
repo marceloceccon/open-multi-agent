@@ -380,4 +380,146 @@ describe('AzureOpenAIAdapter', () => {
     expect(errorEvents).toHaveLength(1)
     expect((errorEvents[0]?.data as Error).message).toBe('Stream exploded')
   })
+
+  // =========================================================================
+  // reasoning_effort forwarding (RFC #200 follow-up)
+  // =========================================================================
+
+  describe('reasoning_effort forwarding', () => {
+    it('forwards thinking.effort as reasoning_effort on chat()', async () => {
+      createCompletionMock.mockResolvedValue(makeCompletion())
+      const adapter = new AzureOpenAIAdapter('k', 'https://test.openai.azure.com')
+
+      await adapter.chat(
+        [textMsg('user', 'Hi')],
+        chatOpts({ model: 'my-deployment', thinking: { enabled: true, effort: 'low' } }),
+      )
+
+      expect(createCompletionMock.mock.calls[0][0].reasoning_effort).toBe('low')
+    })
+
+    it('forwards thinking.effort as reasoning_effort on stream()', async () => {
+      createCompletionMock.mockResolvedValue(makeChunks([
+        textChunk('ok', 'stop'),
+        { id: 'c', model: 'm', choices: [], usage: { prompt_tokens: 1, completion_tokens: 1 } },
+      ]))
+      const adapter = new AzureOpenAIAdapter('k', 'https://test.openai.azure.com')
+
+      await collectEvents(
+        adapter.stream(
+          [textMsg('user', 'Hi')],
+          chatOpts({ model: 'my-deployment', thinking: { enabled: true, effort: 'high' } }),
+        ),
+      )
+
+      expect(createCompletionMock.mock.calls[0][0].reasoning_effort).toBe('high')
+    })
+
+    it('passes through newer effort values via extraBody (e.g. gpt-5 "minimal")', async () => {
+      // See openai-adapter.test.ts for the rationale — the IR `effort`
+      // union is narrowed to SDK-declared values; newer ones go via
+      // extraBody.
+      createCompletionMock.mockResolvedValue(makeCompletion())
+      const adapter = new AzureOpenAIAdapter('k', 'https://test.openai.azure.com')
+
+      await adapter.chat(
+        [textMsg('user', 'Hi')],
+        chatOpts({ model: 'my-deployment', extraBody: { reasoning_effort: 'minimal' } }),
+      )
+
+      expect(createCompletionMock.mock.calls[0][0].reasoning_effort).toBe('minimal')
+    })
+
+    it('omits reasoning_effort when thinking is absent or effort is unset', async () => {
+      createCompletionMock.mockResolvedValue(makeCompletion())
+      const adapter = new AzureOpenAIAdapter('k', 'https://test.openai.azure.com')
+
+      await adapter.chat([textMsg('user', 'Hi')], chatOpts({ model: 'my-deployment' }))
+      expect(createCompletionMock.mock.calls[0][0].reasoning_effort).toBeUndefined()
+
+      createCompletionMock.mockResolvedValue(makeCompletion())
+      await adapter.chat(
+        [textMsg('user', 'Hi')],
+        chatOpts({ model: 'my-deployment', thinking: { enabled: true, budgetTokens: 2048 } }),
+      )
+      expect(createCompletionMock.mock.calls[1][0].reasoning_effort).toBeUndefined()
+    })
+  })
+
+  // =========================================================================
+  // Sampling-param parity with OpenAIAdapter
+  // =========================================================================
+
+  describe('sampling-param parity', () => {
+    it('forwards the OpenAI-cloud-compatible sampling params and extraBody', async () => {
+      createCompletionMock.mockResolvedValue(makeCompletion())
+      const adapter = new AzureOpenAIAdapter('k', 'https://test.openai.azure.com')
+
+      await adapter.chat(
+        [textMsg('user', 'Hi')],
+        chatOpts({
+          model: 'my-deployment',
+          frequencyPenalty: 0.5,
+          presencePenalty: 0.4,
+          topP: 0.9,
+          parallelToolCalls: false,
+          extraBody: { logit_bias: { '50256': -100 } },
+        }),
+      )
+
+      const sent = createCompletionMock.mock.calls[0][0]
+      expect(sent.frequency_penalty).toBe(0.5)
+      expect(sent.presence_penalty).toBe(0.4)
+      expect(sent.top_p).toBe(0.9)
+      expect(sent.parallel_tool_calls).toBe(false)
+      expect(sent.logit_bias).toEqual({ '50256': -100 })
+    })
+
+    it('does NOT forward vLLM-only top_k / min_p (Azure runs MS-hosted OpenAI models)', async () => {
+      createCompletionMock.mockResolvedValue(makeCompletion())
+      const adapter = new AzureOpenAIAdapter('k', 'https://test.openai.azure.com')
+
+      await adapter.chat(
+        [textMsg('user', 'Hi')],
+        chatOpts({ model: 'my-deployment', topK: 40, minP: 0.05 }),
+      )
+
+      const sent = createCompletionMock.mock.calls[0][0]
+      expect(sent.top_k).toBeUndefined()
+      expect(sent.min_p).toBeUndefined()
+    })
+
+    it('extraBody overrides sampling params (field-ordering contract)', async () => {
+      createCompletionMock.mockResolvedValue(makeCompletion())
+      const adapter = new AzureOpenAIAdapter('k', 'https://test.openai.azure.com')
+
+      await adapter.chat(
+        [textMsg('user', 'Hi')],
+        chatOpts({
+          model: 'my-deployment',
+          temperature: 0.2,
+          extraBody: { temperature: 0.9 },
+        }),
+      )
+
+      expect(createCompletionMock.mock.calls[0][0].temperature).toBe(0.9)
+    })
+
+    it('extraBody cannot override structural fields (model/messages/tools/stream)', async () => {
+      createCompletionMock.mockResolvedValue(makeCompletion())
+      const adapter = new AzureOpenAIAdapter('k', 'https://test.openai.azure.com')
+
+      await adapter.chat(
+        [textMsg('user', 'Hi')],
+        chatOpts({
+          model: 'my-deployment',
+          extraBody: { model: 'spoofed-deployment', stream: true } as Record<string, unknown>,
+        }),
+      )
+
+      const sent = createCompletionMock.mock.calls[0][0]
+      expect(sent.model).toBe('my-deployment')
+      expect(sent.stream).toBe(false)
+    })
+  })
 })
