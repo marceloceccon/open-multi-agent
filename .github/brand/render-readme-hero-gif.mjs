@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url))
-const ROOT = resolve(SCRIPT_DIR, '..')
+const ROOT = resolve(SCRIPT_DIR, '../..')
 const BRAND_DIR = join(ROOT, '.github', 'brand')
 const SOURCE_PNG = join(BRAND_DIR, 'demo-dashboard-hero-original.png')
 const WORK_DIR = join(BRAND_DIR, 'frames', 'readme-hero-gif')
