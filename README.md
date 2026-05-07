@@ -52,7 +52,6 @@ Requires Node.js >= 18.
 
 ```bash
 npm install @jackchen_me/open-multi-agent
-export ANTHROPIC_API_KEY=sk-...
 ```
 
 ```typescript
